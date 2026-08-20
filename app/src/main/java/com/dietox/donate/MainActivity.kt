@@ -22,7 +22,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -80,8 +79,9 @@ private fun DietoxApp(repository: SettingsRepository) {
     val accessibilityOn = remember(resumeTick) { DonationGuardService.isEnabled(context) }
     val overlayOn = remember(resumeTick) { Settings.canDrawOverlays(context) }
 
-    val apps by produceState(initialValue = emptyList<InstalledApp>(), resumeTick) {
-        value = withContext(Dispatchers.IO) { InstalledApps.load(context) }
+    var apps by remember { mutableStateOf(emptyList<InstalledApp>()) }
+    LaunchedEffect(resumeTick) {
+        apps = withContext(Dispatchers.IO) { InstalledApps.load(context) }
     }
     val guardedLabels = remember(settings.guardedPackages, apps) {
         settings.guardedPackages.map { pkg ->

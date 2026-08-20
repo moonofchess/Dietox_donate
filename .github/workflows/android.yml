@@ -56,7 +56,11 @@ jobs:
           PY
 
       - name: Run Android Lint
-        run: ./gradlew lintDebug --stacktrace
+        run: ./gradlew lintDebug
+
+      - name: Show lint report
+        if: always()
+        run: cat app/build/reports/lint-results-debug.txt || true
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace

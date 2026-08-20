@@ -35,6 +35,12 @@ android {
     buildFeatures {
         compose = true
     }
+
+    lint {
+        abortOnError = true
+        // CI 로그에서 경고까지 보려고 텍스트 리포트를 남긴다.
+        textReport = true
+    }
 }
 
 dependencies {
