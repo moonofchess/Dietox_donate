@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Dietox 후원차단</string>
+    <string name="accessibility_label">Dietox 후원차단</string>
+    <string name="accessibility_summary">치지직 후원 버튼과 치즈 충전 화면을 막습니다</string>
+    <string name="accessibility_description">화면에 후원 버튼이나 충전·결제 화면이 나타났는지 알아보기 위해 화면 내용을 읽습니다. 읽은 내용은 기기 밖으로 나가지 않으며, 감시할 앱으로 고른 앱에서만 동작합니다.</string>
+</resources>
