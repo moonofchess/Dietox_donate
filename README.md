@@ -38,10 +38,14 @@ APK는 GitHub이 빌드해서 올려 줍니다. 안드로이드 스튜디오도,
 
 **폰에서 바로 받기 (가장 쉬움)**
 
-1. 폰 브라우저로 이 저장소의 [Releases](../../releases) 를 연다
-2. 최신 릴리스의 `dietox-v1.0.0.apk` 를 누른다
-3. "이 출처의 앱 설치를 허용" 을 켜 달라고 하면 켜 준다
-4. 설치
+폰 브라우저 주소창에 이것만 치면 바로 받아집니다. GitHub 페이지를 거치지 않습니다.
+
+```
+github.com/moonofchess/Dietox_donate/releases/latest/download/dietox.apk
+```
+
+받은 뒤 "이 출처의 앱 설치를 허용" 을 켜 달라고 하면 켜 주고 설치하면 됩니다.
+버전이 붙은 파일이 필요하면 [Releases](../../releases) 페이지에 함께 올려 둡니다.
 
 릴리스가 아직 없다면 **Actions** 탭 → `Release APK` → `Run workflow` 를 눌러
 버전을 적고 실행하면 몇 분 뒤에 생깁니다. 태그를 밀어도 똑같이 동작합니다.

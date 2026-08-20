@@ -73,10 +73,13 @@ jobs:
               sys.exit("단위 테스트가 실패했습니다")
           PY
 
+      # 버전이 붙은 이름과, 폰에서 받아치기 쉬운 짧은 이름을 함께 올린다.
+      # 짧은 쪽은 /releases/latest/download/dietox.apk 로 항상 최신을 가리킨다.
       - name: Name the APK
         run: |
           mkdir -p dist
           cp app/build/outputs/apk/debug/app-debug.apk "dist/dietox-${VERSION}.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "dist/dietox.apk"
           ls -lh dist
 
       - name: Publish release
@@ -103,8 +106,14 @@ jobs:
             처음 며칠은 잠금을 짧게 걸고 실제로 막히는지 확인해 보세요.
           NOTES
 
-          gh release create "$VERSION" \
-            "dist/dietox-${VERSION}.apk" \
-            --target "$GITHUB_SHA" \
-            --title "Dietox $VERSION" \
-            --notes-file notes.md
+          # 같은 버전을 다시 올릴 수도 있으므로 이미 있으면 덮어쓴다.
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            gh release upload "$VERSION" dist/dietox-${VERSION}.apk dist/dietox.apk --clobber
+            gh release edit "$VERSION" --title "Dietox $VERSION" --notes-file notes.md
+          else
+            gh release create "$VERSION" \
+              "dist/dietox-${VERSION}.apk" "dist/dietox.apk" \
+              --target "$GITHUB_SHA" \
+              --title "Dietox $VERSION" \
+              --notes-file notes.md
+          fi
