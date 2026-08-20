@@ -1,0 +1,88 @@
+name: Release APK
+
+# 태그를 올리면 APK를 빌드해 Release 에 붙인다.
+# Actions 탭의 아티팩트는 로그인해서 zip 을 받아 풀어야 하지만,
+# Release 에 붙은 파일은 폰 브라우저에서 바로 눌러 설치할 수 있다.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Test, lint, build
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug
+
+      - name: Check unit test results
+        run: |
+          python3 - <<'PY'
+          import glob, sys, xml.etree.ElementTree as ET
+
+          files = sorted(glob.glob("app/build/test-results/testDebugUnitTest/TEST-*.xml"))
+          tests = failures = errors = 0
+          for path in files:
+              root = ET.parse(path).getroot()
+              tests += int(root.get("tests", 0))
+              failures += int(root.get("failures", 0))
+              errors += int(root.get("errors", 0))
+
+          print(f"suites={len(files)} tests={tests} failures={failures} errors={errors}")
+          if tests == 0:
+              sys.exit("단위 테스트가 하나도 실행되지 않았습니다")
+          if failures or errors:
+              sys.exit("단위 테스트가 실패했습니다")
+          PY
+
+      - name: Name the APK
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk "dist/dietox-${GITHUB_REF_NAME}.apk"
+          ls -lh dist
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > notes.md <<'NOTES'
+          치지직 후원 버튼과 치즈 충전 화면을 막아 주는 앱입니다.
+
+          ## 설치
+
+          1. 아래 `dietox-*.apk` 를 **폰 브라우저에서** 눌러 받습니다
+          2. "이 출처의 앱 설치 허용"을 켜 달라고 하면 켜 줍니다
+          3. 설치가 끝나면 앱을 열고 **준비하기** 항목 세 개를 채웁니다
+             - 접근성 권한
+             - 다른 앱 위에 표시
+             - 감시할 앱에서 치지직 고르기
+          4. 잠금 기간을 고르면 끝입니다
+
+          ## 알아 두실 것
+
+          - 테스트용으로 서명된 APK라, 다음 버전을 설치할 때 기존 앱을 먼저 지워야 할 수 있습니다.
+          - 화면 문구를 보고 판단하기 때문에 치지직이 문구를 바꾸면 놓칠 수 있습니다.
+            처음 며칠은 잠금을 짧게 걸고 실제로 막히는지 확인해 보세요.
+          NOTES
+
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/dietox-${GITHUB_REF_NAME}.apk" \
+            --title "Dietox $GITHUB_REF_NAME" \
+            --notes-file notes.md
