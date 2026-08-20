@@ -1,11 +1,21 @@
 name: Release APK
 
-# 태그를 올리면 APK를 빌드해 Release 에 붙인다.
-# Actions 탭의 아티팩트는 로그인해서 zip 을 받아 풀어야 하지만,
+# APK 를 Release 에 붙인다.
+# Actions 탭의 아티팩트는 로그인해서 zip 을 받아 압축을 풀어야 하지만,
 # Release 에 붙은 파일은 폰 브라우저에서 바로 눌러 설치할 수 있다.
+#
+# 두 가지로 돌릴 수 있다.
+#   - 태그를 밀거나 (git tag v1.0.1 && git push origin v1.0.1)
+#   - Actions 탭에서 이 워크플로를 직접 실행하고 버전을 적어 주거나
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "릴리스 버전 (예: v1.0.0)"
+        required: true
+        default: "v1.0.0"
 
 permissions:
   contents: write
@@ -28,6 +38,17 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      # 입력값을 셸에 직접 끼워 넣지 않도록 환경변수로 받는다.
+      - name: Resolve version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "VERSION=$INPUT_VERSION" >> "$GITHUB_ENV"
+          else
+            echo "VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+          fi
 
       - name: Test, lint, build
         run: ./gradlew testDebugUnitTest lintDebug assembleDebug
@@ -55,7 +76,7 @@ jobs:
       - name: Name the APK
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk "dist/dietox-${GITHUB_REF_NAME}.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "dist/dietox-${VERSION}.apk"
           ls -lh dist
 
       - name: Publish release
@@ -82,7 +103,8 @@ jobs:
             처음 며칠은 잠금을 짧게 걸고 실제로 막히는지 확인해 보세요.
           NOTES
 
-          gh release create "$GITHUB_REF_NAME" \
-            "dist/dietox-${GITHUB_REF_NAME}.apk" \
-            --title "Dietox $GITHUB_REF_NAME" \
+          gh release create "$VERSION" \
+            "dist/dietox-${VERSION}.apk" \
+            --target "$GITHUB_SHA" \
+            --title "Dietox $VERSION" \
             --notes-file notes.md
