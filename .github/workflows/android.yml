@@ -26,7 +26,37 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Run unit tests
-        run: ./gradlew test --stacktrace
+        run: ./gradlew testDebugUnitTest --stacktrace
+
+      # 초록불만으로는 테스트가 실제로 돌았는지 알 수 없다. 0개여도 통과로 보이기 때문에
+      # 결과 XML을 직접 세어 보고, 하나도 안 돌았으면 실패시킨다.
+      - name: Check unit test results
+        run: |
+          python3 - <<'PY'
+          import glob, sys, xml.etree.ElementTree as ET
+
+          files = sorted(glob.glob("app/build/test-results/testDebugUnitTest/TEST-*.xml"))
+          tests = failures = errors = skipped = 0
+          for path in files:
+              root = ET.parse(path).getroot()
+              tests += int(root.get("tests", 0))
+              failures += int(root.get("failures", 0))
+              errors += int(root.get("errors", 0))
+              skipped += int(root.get("skipped", 0))
+
+          for path in files:
+              root = ET.parse(path).getroot()
+              print(f'{root.get("name")}: {root.get("tests")} tests')
+          print(f"TOTAL suites={len(files)} tests={tests} failures={failures} errors={errors} skipped={skipped}")
+
+          if tests == 0:
+              sys.exit("단위 테스트가 하나도 실행되지 않았습니다")
+          if failures or errors:
+              sys.exit("단위 테스트가 실패했습니다")
+          PY
+
+      - name: Run Android Lint
+        run: ./gradlew lintDebug --stacktrace
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
@@ -38,10 +68,12 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      - name: Upload test report on failure
+      - name: Upload reports on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report
-          path: app/build/reports/
+          name: build-reports
+          path: |
+            app/build/reports/
+            app/build/test-results/
           if-no-files-found: ignore
